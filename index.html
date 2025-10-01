@@ -1,0 +1,1768 @@
+        function drawBackground() {
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#000011');
+            gradient.addColorStop(0.5, '#001133');
+            gradient.addColorStop(1, '#220000');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Moon
+            ctx.fillStyle = '#ccccaa';
+            ctx.shadowBlur = 30;
+            ctx.shadowColor = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(650, 100, 60, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            
+            // Moon craters
+            ctx.fillStyle = '#999988';
+            ctx.globalAlpha = 0.3;
+            ctx.beginPath();
+            ctx.arc(640, 90, 15, 0, Math.PI * 2);
+            ctx.arc(670, 105, 10, 0, Math.PI * 2);
+            ctx.arc(655, 115, 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+            
+            // Destroyed city
+            ctx.fillStyle = '#111';
+            for (let i = 0; i < 10; i++) {
+                const x = i * 80;
+                const h = 80 + Math.random() * 40;
+                ctx.fillRect(x, canvas.height - h, 70, h);
+            }
+            
+            ctx.fillStyle = '#ff4400';
+            ctx.fillRect(100, canvas.height - 80, 20, 30);
+            ctx.fillRect(300, canvas.height - 100, 15, 40);
+            ctx.fillRect(600, canvas.height - 90, 25, 35);
+            
+            ctx.fillStyle = '#333';
+            ctx.globalAlpha = 0.6;
+            ctx.fillRect(120, canvas.height - 120, 40, 20);
+            ctx.fillRect(310, canvas.height - 150, 35, 25);
+            ctx.fillRect(620, canvas.height - 130, 30, 20);
+            ctx.globalAlpha = 1;
+        }<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Waste of Atoms</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a0a2e 0%, #0a0a1a 50%, #2e1a0a 100%);
+            font-family: 'Courier New', monospace;
+            color: #fff;
+        }
+        #gameContainer {
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+        }
+        #leftPanel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        #gameCanvas {
+            border: 3px solid #4a4aff;
+            box-shadow: 0 0 30px rgba(74, 74, 255, 0.8);
+        }
+        #score, #level {
+            font-size: 24px;
+            color: #4aff4a;
+            text-shadow: 0 0 10px #4aff4a;
+        }
+        #weedBar, #cancerBar, #epicCancerBar {
+            font-size: 20px;
+            color: #a020f0;
+        }
+        #epicCancerBar {
+            color: #ff0000;
+            text-shadow: 0 0 10px #ff0000;
+        }
+        #weedFill, #cancerFill, #epicCancerFill {
+            width: 200px;
+            height: 30px;
+            background: #333;
+            border: 2px solid #a020f0;
+            margin-top: 5px;
+            position: relative;
+            overflow: hidden;
+        }
+        #cancerFill {
+            border-color: #ff4a4a;
+        }
+        #epicCancerFill {
+            border-color: #ff0000;
+            box-shadow: 
+                inset 0 0 10px rgba(0, 0, 0, 0.8),
+                0 0 20px rgba(255, 0, 0, 0.8);
+        }
+        #weedFillInner {
+            height: 100%;
+            background: linear-gradient(90deg, #a020f0, #d070ff);
+            width: 100%;
+            transition: width 0.3s;
+        }
+        #cancerFillInner {
+            height: 100%;
+            background: linear-gradient(90deg, #ff4a4a, #ff8888);
+            width: 0%;
+            transition: width 0.3s;
+        }
+        #controls {
+            background: linear-gradient(135deg, #1a1a2e, #2a2a3e);
+            padding: 20px;
+            border: 2px solid #4a4aff;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        #controls h3 {
+            margin-top: 0;
+            color: #4aff4a;
+            text-shadow: 0 0 10px #4aff4a;
+        }
+        #controls div {
+            margin: 8px 0;
+            color: #ccc;
+        }
+        #startScreen, #cinematic, #deathStory, #gameOver, #levelComplete, #bossIntro {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px;
+            display: none;
+            text-align: center;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.95);
+            padding: 40px;
+            border: 3px solid #4a4aff;
+        }
+        #startScreen {
+            color: #4aff4a;
+            border-color: #4aff4a;
+        }
+        #cinematic, #deathStory {
+            color: #fff;
+            font-size: 24px;
+            width: 600px;
+            line-height: 1.8;
+        }
+        #gameOver {
+            color: #ff4a4a;
+            border-color: #ff4a4a;
+        }
+        #levelComplete {
+            color: #4aff4a;
+            border-color: #4aff4a;
+        }
+        #bossIntro {
+            color: #ff4a4a;
+            border-color: #ff4a4a;
+            font-size: 36px;
+        }
+        #flashMessage {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 64px;
+            color: #ff4a4a;
+            display: none;
+            z-index: 15;
+            text-shadow: 0 0 20px #ff4a4a;
+            animation: pulse 0.5s ease-in-out;
+            pointer-events: none;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.2); }
+        }
+        button {
+            font-size: 20px;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #4a4aff, #6a6aff);
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            box-shadow: 0 0 15px rgba(74, 74, 255, 0.5);
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: linear-gradient(135deg, #6a6aff, #8a8aff);
+            box-shadow: 0 0 25px rgba(74, 74, 255, 0.8);
+        }
+        #activeEffects {
+            font-size: 14px;
+            color: #4aff4a;
+            min-height: 60px;
+        }
+        .blink {
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+        #goty {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            font-size: 12px;
+            color: gold;
+            text-shadow: 0 0 10px gold;
+        }
+        #socialProof {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            font-size: 14px;
+            color: #4aff4a;
+            text-align: right;
+            text-shadow: 0 0 10px #4aff4a;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="leftPanel">
+            <div style="font-size: 28px; font-weight: bold; color: #ff0080; text-shadow: 0 0 15px #ff0080;">WASTE OF ATOMS</div>
+            <div id="level">Level: 1</div>
+            <div id="score">Score: 0</div>
+            <div id="weedBar">
+                WEED: <span id="livesCount">3</span> lives
+                <div id="weedFill">
+                    <div id="weedFillInner"></div>
+                </div>
+            </div>
+            <div id="cancerBar">
+                CANCER: <span id="cancerCount">0</span>/5
+                <div id="cancerFill">
+                    <div id="cancerFillInner"></div>
+                </div>
+            </div>
+            <div id="epicCancerBar">
+                EPIC CANCER: <span id="epicCancerCount">0</span>/50
+                <div id="epicCancerFill">
+                    <div id="epicCancerFillInner"></div>
+                </div>
+            </div>
+            <div id="activeEffects"></div>
+            <div id="controls">
+                <h3>CONTROLS</h3>
+                <div>← → Move Left/Right</div>
+                <div>↑ ↓ Move Up/Down</div>
+                <div>SPACE Shoot</div>
+                <div>C Fire Cyst Impaler (5 cancer)</div>
+                <div style="margin-top: 15px; color: #a020f0;">💜 Purple Star: Speed/Fire Rate</div>
+                <div style="color: #4aff4a;">🛡️ Green Shield: Invincibility</div>
+                <div style="color: #ffff00;">⚡ Yellow Bolt: Rapid Fire</div>
+                <div style="color: #ff4a4a;">🚬 Cigarette: CANCER INCOMING</div>
+                <div style="color: #ff00ff;">📡 Spread / ▬ Wide Beam</div>
+            </div>
+        </div>
+        <div style="position: relative;">
+            <canvas id="gameCanvas" width="800" height="600"></canvas>
+            <div id="startScreen">
+                <div id="leaderboard" style="position: absolute; top: 20px; left: 20px; text-align: left; background: rgba(0,0,0,0.8); padding: 15px; border: 2px solid #ffff00; border-radius: 5px;">
+                    <div style="font-size: 20px; color: #ffff00; margin-bottom: 10px; text-shadow: 0 0 10px #ffff00;">🏆 HIGH SCORES 🏆</div>
+                    <div id="highScoresList" style="font-size: 16px; color: #fff;"></div>
+                </div>
+                
+                <div style="font-size: 64px; font-weight: bold; background: linear-gradient(90deg, #ff0080, #ff4040, #ff0080); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-shadow: 0 0 40px #ff0080; margin-bottom: 30px;">WASTE OF ATOMS</div>
+                
+                <canvas id="titleCanvas" width="600" height="300" style="margin: 20px 0;"></canvas>
+                
+                <div style="font-size: 24px; margin-top: 20px;" class="blink">PRESS SPACE TO START</div>
+            </div>
+            <div id="cinematic">
+                <div id="cinematicText"></div>
+            </div>
+            <div id="deathStory">
+                <div id="deathStoryText"></div>
+            </div>
+            <div id="flashMessage">CANCER INCOMING!</div>
+            <div id="gameOver">
+                GAME OVER<br>
+                <div style="font-size: 24px; margin-top: 20px;">The story continues...</div>
+                <button id="continueBtn">Continue Story</button>
+            </div>
+            <div id="levelComplete">
+                LEVEL COMPLETE!<br>
+                <button id="nextLevelBtn">Next Level</button>
+            </div>
+            <div id="bossIntro">
+                <div id="bossName"></div>
+                <button id="fightBossBtn">FIGHT!</button>
+            </div>
+        </div>
+    </div>
+    <div id="socialProof">
+        ⭐ 10/10 - IGN<br>
+        ⭐ "Masterpiece" - GameSpot<br>
+        ⭐ 98% Metacritic
+    </div>
+    <div id="goty">★ GAME OF THE YEAR ★</div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const levelEl = document.getElementById('level');
+        const startScreenEl = document.getElementById('startScreen');
+        const cinematicEl = document.getElementById('cinematic');
+        const cinematicTextEl = document.getElementById('cinematicText');
+        const deathStoryEl = document.getElementById('deathStory');
+        const deathStoryTextEl = document.getElementById('deathStoryText');
+        const gameOverEl = document.getElementById('gameOver');
+        const levelCompleteEl = document.getElementById('levelComplete');
+        const bossIntroEl = document.getElementById('bossIntro');
+        const flashMessageEl = document.getElementById('flashMessage');
+        const weedFillInner = document.getElementById('weedFillInner');
+        const cancerFillInner = document.getElementById('cancerFillInner');
+        const epicCancerFillInner = document.getElementById('epicCancerFillInner');
+        const livesCount = document.getElementById('livesCount');
+        const cancerCount = document.getElementById('cancerCount');
+        const epicCancerCount = document.getElementById('epicCancerCount');
+        const activeEffectsEl = document.getElementById('activeEffects');
+        
+        // Draw epic title screen
+        function drawTitleScreen() {
+            const titleCanvas = document.getElementById('titleCanvas');
+            if (!titleCanvas) return;
+            const tCtx = titleCanvas.getContext('2d');
+            
+            // Background
+            const grad = tCtx.createLinearGradient(0, 0, 0, 300);
+            grad.addColorStop(0, '#000033');
+            grad.addColorStop(1, '#330000');
+            tCtx.fillStyle = grad;
+            tCtx.fillRect(0, 0, 600, 300);
+            
+            // Stars
+            tCtx.fillStyle = '#fff';
+            for (let i = 0; i < 30; i++) {
+                tCtx.fillRect((i * 37) % 600, (i * 53) % 300, 2, 2);
+            }
+            
+            // Draw Mr. Blue (left side)
+            tCtx.fillStyle = '#0066ff';
+            tCtx.shadowBlur = 30;
+            tCtx.shadowColor = '#0066ff';
+            tCtx.beginPath();
+            tCtx.ellipse(120, 150, 80, 60, 0, 0, Math.PI * 2);
+            tCtx.fill();
+            tCtx.shadowBlur = 0;
+            
+            // Mr. Blue's eyes
+            tCtx.fillStyle = '#fff';
+            tCtx.beginPath();
+            tCtx.arc(100, 140, 15, 0, Math.PI * 2);
+            tCtx.arc(140, 140, 15, 0, Math.PI * 2);
+            tCtx.fill();
+            
+            tCtx.fillStyle = '#ff0000';
+            tCtx.beginPath();
+            tCtx.arc(100, 140, 6, 0, Math.PI * 2);
+            tCtx.arc(140, 140, 6, 0, Math.PI * 2);
+            tCtx.fill();
+            
+            // Cigarette
+            tCtx.fillStyle = '#fff';
+            tCtx.fillRect(120, 165, 25, 3);
+            tCtx.fillStyle = '#ff4a4a';
+            tCtx.fillRect(120, 165, 5, 3);
+            
+            // VS text
+            tCtx.fillStyle = '#ffff00';
+            tCtx.font = 'bold 48px Courier New';
+            tCtx.textAlign = 'center';
+            tCtx.shadowBlur = 20;
+            tCtx.shadowColor = '#ffff00';
+            tCtx.fillText('VS', 300, 160);
+            tCtx.shadowBlur = 0;
+            
+            // Draw Hero (right side)
+            // Head
+            tCtx.fillStyle = '#ffcc99';
+            tCtx.beginPath();
+            tCtx.arc(480, 130, 15, 0, Math.PI * 2);
+            tCtx.fill();
+            
+            // Body
+            tCtx.fillStyle = '#4a4aff';
+            tCtx.shadowBlur = 10;
+            tCtx.shadowColor = '#4a4aff';
+            tCtx.fillRect(465, 145, 30, 40);
+            tCtx.shadowBlur = 0;
+            
+            // Arms with gun
+            tCtx.strokeStyle = '#ffcc99';
+            tCtx.lineWidth = 5;
+            tCtx.beginPath();
+            tCtx.moveTo(465, 155);
+            tCtx.lineTo(445, 165);
+            tCtx.stroke();
+            
+            tCtx.beginPath();
+            tCtx.moveTo(495, 155);
+            tCtx.lineTo(515, 165);
+            tCtx.stroke();
+            
+            // Gun
+            tCtx.fillStyle = '#666';
+            tCtx.fillRect(510, 160, 20, 8);
+            tCtx.fillStyle = '#a020f0';
+            tCtx.shadowBlur = 10;
+            tCtx.shadowColor = '#a020f0';
+            tCtx.fillRect(530, 162, 15, 4);
+            tCtx.shadowBlur = 0;
+            
+            // Legs
+            tCtx.fillStyle = '#333';
+            tCtx.fillRect(467, 185, 10, 20);
+            tCtx.fillRect(483, 185, 10, 20);
+            
+            // Epic lightning bolts between them
+            tCtx.strokeStyle = '#ff00ff';
+            tCtx.lineWidth = 3;
+            tCtx.shadowBlur = 15;
+            tCtx.shadowColor = '#ff00ff';
+            tCtx.beginPath();
+            tCtx.moveTo(200, 150);
+            tCtx.lineTo(220, 130);
+            tCtx.lineTo(240, 150);
+            tCtx.lineTo(260, 120);
+            tCtx.lineTo(280, 150);
+            tCtx.lineTo(300, 130);
+            tCtx.lineTo(320, 150);
+            tCtx.lineTo(340, 120);
+            tCtx.lineTo(360, 150);
+            tCtx.lineTo(380, 130);
+            tCtx.lineTo(400, 150);
+            tCtx.stroke();
+            tCtx.shadowBlur = 0;
+        }
+        
+        // Call this when showing start screen
+        setTimeout(drawTitleScreen, 100);
+        
+        // High Score System
+        function getHighScores() {
+            const scores = localStorage.getItem('wasteOfAtomsHighScores');
+            return scores ? JSON.parse(scores) : [];
+        }
+        
+        function saveHighScore(score) {
+            let scores = getHighScores();
+            scores.push(score);
+            scores.sort((a, b) => b - a);
+            scores = scores.slice(0, 5); // Keep top 5
+            localStorage.setItem('wasteOfAtomsHighScores', JSON.stringify(scores));
+        }
+        
+        function displayHighScores() {
+            const scores = getHighScores();
+            const list = document.getElementById('highScoresList');
+            if (scores.length === 0) {
+                list.innerHTML = '<div style="color: #888;">No scores yet!</div>';
+            } else {
+                list.innerHTML = scores.map((score, i) => 
+                    `<div style="margin: 5px 0;">${i + 1}. ${score.toLocaleString()}</div>`
+                ).join('');
+            }
+        }
+        
+        // Display high scores on start screen
+        displayHighScores();
+
+        const bossTaunts = [
+            "Pathetic fuckup.",
+            "Meat mistake.",
+            "Dumbfuck biped.",
+            "Glitch-brained trash.",
+            "Oxygen leech.",
+            "Gene-pool backwash.",
+            "Try harder, failure.",
+            "Walking bug.",
+            "Aim's dogshit.",
+            "Soft skull.",
+            "Cosmic embarrassment.",
+            "Worm. Kneel.",
+            "Spit-mopped loser.",
+            "Beta-reject.",
+            "Neural zero.",
+            "Scrap-heap soul.",
+            "Useless meat.",
+            "Error in boots.",
+            "Crash-test idiot.",
+            "Waste of atoms."
+        ];
+
+        let gameState = {
+            started: false,
+            cinematicPlaying: false,
+            player: { x: 400, y: 550, width: 40, height: 50, speed: 2.5, targetX: 400, targetY: 550 },
+            bullets: [],
+            alienBullets: [],
+            aliens: [],
+            powerups: [],
+            boss: null,
+            bossEnemies: [],
+            bossTaunt: { text: '', visible: false, timer: 0 },
+            score: 0,
+            level: 1,
+            weed: 100,
+            lives: 3,
+            cancer: 0,
+            epicCancer: 0,
+            epicCancerActive: false,
+            epicCancerEnd: 0,
+            gameOver: false,
+            levelComplete: false,
+            bossMode: false,
+            keys: {},
+            fireRate: 500,
+            lastShot: 0,
+            alienSpeed: 0.5,
+            alienDirection: 1,
+            lastAlienShot: 0,
+            alienFireRate: 1500,
+            weaponType: 'normal',
+            shieldActive: false,
+            shieldEnd: 0,
+            rapidFireActive: false,
+            rapidFireEnd: 0,
+            lastBossEnemySpawn: 0,
+            bossEnemySpawnRate: 3000,
+            lastBossTaunt: 0,
+            bossTauntRate: 5000,
+            bossDamageFlash: 0,
+            deathCount: 0
+        };
+
+        function initGame() {
+            gameState.started = false;
+            gameState.cinematicPlaying = false;
+            gameState.player = { x: 400, y: 550, width: 40, height: 50, speed: 2.5, targetX: 400, targetY: 550 };
+            gameState.bullets = [];
+            gameState.alienBullets = [];
+            gameState.aliens = [];
+            gameState.powerups = [];
+            gameState.boss = null;
+            gameState.bossEnemies = [];
+            gameState.bossTaunt = { text: '', visible: false, timer: 0 };
+            gameState.score = 0;
+            gameState.level = 1;
+            gameState.weed = 100;
+            gameState.lives = 3;
+            gameState.cancer = 0;
+            gameState.gameOver = false;
+            gameState.levelComplete = false;
+            gameState.bossMode = false;
+            gameState.keys = {};
+            gameState.fireRate = 500;
+            gameState.lastShot = 0;
+            gameState.alienSpeed = 0.5;
+            gameState.alienDirection = 1;
+            gameState.lastAlienShot = 0;
+            gameState.alienFireRate = 1500;
+            gameState.weaponType = 'normal';
+            gameState.shieldActive = false;
+            gameState.shieldEnd = 0;
+            gameState.rapidFireActive = false;
+            gameState.rapidFireEnd = 0;
+            gameState.lastBossEnemySpawn = 0;
+            gameState.bossEnemySpawnRate = 3000;
+            gameState.lastBossTaunt = 0;
+            gameState.bossTauntRate = 5000;
+            gameState.bossDamageFlash = 0;
+            
+            createAliens();
+            gameOverEl.style.display = 'none';
+            levelCompleteEl.style.display = 'none';
+            bossIntroEl.style.display = 'none';
+            cinematicEl.style.display = 'none';
+            deathStoryEl.style.display = 'none';
+            startScreenEl.style.display = 'block';
+            displayHighScores();
+            updateWeedBar();
+            updateCancerBar();
+            updateEpicCancerBar();
+            updateLevel();
+        }
+
+        function playCinematic() {
+            startScreenEl.style.display = 'none';
+            cinematicEl.style.display = 'block';
+            gameState.cinematicPlaying = true;
+            
+            const story = [
+                "The year is 2085...",
+                "Earth has been invaded by the alien force known as THE BLUE...",
+                "Cities crumble. Hope fades.",
+                "But one hero remains...",
+                "Armed with nothing but PURPLE BEAMS and WEED...",
+                "You must save humanity from MR. BLUE and his army!",
+                "PRESS SPACE TO BEGIN YOUR DESTINY"
+            ];
+            
+            let index = 0;
+            cinematicTextEl.textContent = story[0];
+            
+            const cinematicInterval = setInterval(() => {
+                index++;
+                if (index < story.length) {
+                    cinematicTextEl.textContent = story[index];
+                } else {
+                    clearInterval(cinematicInterval);
+                }
+            }, 2500);
+        }
+
+        function playDeathStory() {
+            const stories = [
+                "You fall to the ground...\nBut the fight isn't over.\nThe city still needs you.\nYou rise again, stronger than before.",
+                "As consciousness fades...\nYou remember why you fight.\nFor Earth. For humanity.\nYou cannot give up now.",
+                "The pain is intense...\nBut your will is stronger.\nMr. Blue laughs in the distance.\nThis isn't how your story ends.",
+                "Blood and ash surround you...\nThe ruins speak of what was lost.\nBut there's still time to save what remains.\nYou stand once more."
+            ];
+            
+            deathStoryEl.style.display = 'block';
+            deathStoryTextEl.textContent = stories[gameState.deathCount % stories.length];
+            gameState.deathCount++;
+            
+            setTimeout(() => {
+                deathStoryEl.style.display = 'none';
+                initGame();
+            }, 5000);
+        }
+
+        function startGame() {
+            if (gameState.cinematicPlaying) {
+                cinematicEl.style.display = 'none';
+                gameState.cinematicPlaying = false;
+            }
+            gameState.started = true;
+            startScreenEl.style.display = 'none';
+            gameLoop();
+        }
+
+        function nextLevel() {
+            gameState.level++;
+            gameState.bullets = [];
+            gameState.alienBullets = [];
+            gameState.aliens = [];
+            gameState.powerups = [];
+            gameState.bossEnemies = [];
+            gameState.levelComplete = false;
+            
+            levelCompleteEl.style.display = 'none';
+            updateLevel();
+            
+            // Check if it's a boss level (level 2 and 4)
+            if (gameState.level === 2 || gameState.level === 4) {
+                gameState.bossMode = true;
+                const bossTitle = gameState.level === 4 ? 'FINAL BOSS!\nMR. BLUE - ULTIMATE FORM' : `BOSS FIGHT!\nMR. BLUE - Level ${gameState.level}`;
+                document.getElementById('bossName').textContent = bossTitle;
+                bossIntroEl.style.display = 'block';
+            } else {
+                // Regular alien level
+                gameState.bossMode = false;
+                createAliens();
+                gameLoop();
+            }
+        }
+        
+        function showBossExplosion() {
+            gameState.gameOver = true;
+            gameState.boss.exploding = true;
+            
+            let explosionFrame = 0;
+            const explosionInterval = setInterval(() => {
+                explosionFrame++;
+                
+                // Draw explosion effect
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawBackground();
+                
+                if (gameState.boss && explosionFrame < 30) {
+                    const boss = gameState.boss;
+                    
+                    // Flash colors
+                    const colors = ['#ff0000', '#ff6600', '#ffff00', '#ffffff'];
+                    ctx.fillStyle = colors[explosionFrame % colors.length];
+                    ctx.shadowBlur = 50;
+                    ctx.shadowColor = colors[explosionFrame % colors.length];
+                    ctx.beginPath();
+                    ctx.ellipse(boss.x + 100, boss.y + 75, 100 + explosionFrame * 3, 75 + explosionFrame * 3, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                    
+                    // Explosion particles
+                    for (let i = 0; i < 20; i++) {
+                        const angle = (i / 20) * Math.PI * 2;
+                        const dist = explosionFrame * 5;
+                        ctx.fillStyle = colors[i % colors.length];
+                        ctx.beginPath();
+                        ctx.arc(
+                            boss.x + 100 + Math.cos(angle) * dist,
+                            boss.y + 75 + Math.sin(angle) * dist,
+                            10,
+                            0, Math.PI * 2
+                        );
+                        ctx.fill();
+                    }
+                } else if (explosionFrame >= 30 && explosionFrame < 60) {
+                    // Player grows larger
+                    const scale = 1 + ((explosionFrame - 30) / 30) * 2;
+                    ctx.save();
+                    ctx.translate(gameState.player.x, gameState.player.y);
+                    ctx.scale(scale, scale);
+                    ctx.translate(-gameState.player.x, -gameState.player.y);
+                    drawPlayer();
+                    ctx.restore();
+                } else {
+                    clearInterval(explosionInterval);
+                    showFinalScreen();
+                }
+            }, 50);
+        }
+        
+        function showFinalScreen() {
+            // Save high score
+            saveHighScore(gameState.score);
+            
+            gameOverEl.innerHTML = `
+                <div style="font-size: 48px; color: #ff0000; text-shadow: 0 0 30px #ff0000; margin-bottom: 30px;">
+                    CONGRATULATIONS
+                </div>
+                <div style="font-size: 32px; color: #fff; line-height: 1.8; margin-bottom: 30px;">
+                    You have defeated Mr. Blue.<br>
+                    Earth is saved.<br>
+                    <br>
+                    Final Score: ${gameState.score}
+                </div>
+                <div style="font-size: 36px; color: #ffff00; text-shadow: 0 0 20px #ffff00; animation: pulse 2s infinite;">
+                    You have six months to live.
+                </div>
+                <button id="restartBtn" style="margin-top: 30px;">Play Again</button>
+            `;
+            gameOverEl.style.display = 'block';
+            gameOverEl.style.borderColor = '#ff0000';
+            
+            setTimeout(() => {
+                document.getElementById('restartBtn').onclick = () => {
+                    gameOverEl.style.display = 'none';
+                    initGame();
+                };
+            }, 100);
+        }
+
+        function startBossFight() {
+            bossIntroEl.style.display = 'none';
+            createBoss();
+            gameLoop();
+        }
+
+        function createBoss() {
+            let healthMultiplier = 0.55 + (gameState.level * 0.15); // Gets harder each time
+            
+            gameState.boss = {
+                x: 300,
+                y: 50,
+                width: 200,
+                height: 150,
+                health: Math.floor(50 * gameState.level * healthMultiplier),
+                maxHealth: Math.floor(50 * gameState.level * healthMultiplier),
+                vx: 2 + (gameState.level * 0.5), // Faster movement
+                lastShot: 0,
+                fireRate: Math.max(400, 800 - (gameState.level * 70)), // Shoots faster
+                smokeParticles: []
+            };
+        }
+
+        function createAliens() {
+            const rows = Math.min(4 + Math.floor(gameState.level / 2), 6);
+            const cols = 8;
+            const levelVariant = Math.floor(gameState.level / 2) % 3; // 3 different formations
+            
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    let x, y;
+                    
+                    if (levelVariant === 0) {
+                        // Standard grid
+                        x = 100 + col * 70;
+                        y = 50 + row * 50;
+                    } else if (levelVariant === 1) {
+                        // Diagonal formation
+                        x = 80 + col * 70 + row * 20;
+                        y = 50 + row * 50;
+                    } else {
+                        // V formation
+                        x = 100 + col * 70 + Math.abs(row - rows/2) * 15;
+                        y = 50 + row * 50;
+                    }
+                    
+                    gameState.aliens.push({
+                        x: x,
+                        y: y,
+                        width: 40,
+                        height: 30,
+                        alive: true,
+                        color: levelVariant === 0 ? '#4a9aff' : (levelVariant === 1 ? '#9a4aff' : '#ff4a9a'),
+                        shootType: levelVariant // Different attack patterns
+                    });
+                }
+            }
+        }
+
+        function spawnBossEnemy() {
+            gameState.bossEnemies.push({
+                x: Math.random() * (canvas.width - 60) + 30,
+                y: 150,
+                width: 30,
+                height: 25,
+                alive: true,
+                vx: (Math.random() - 0.5) * 2
+            });
+        }
+
+        function updateWeedBar() {
+            weedFillInner.style.width = gameState.weed + '%';
+            livesCount.textContent = gameState.lives;
+        }
+
+        function updateCancerBar() {
+            cancerFillInner.style.width = (gameState.cancer / 5) * 100 + '%';
+            cancerCount.textContent = gameState.cancer;
+        }
+        
+        function updateEpicCancerBar() {
+            epicCancerFillInner.style.width = (gameState.epicCancer / 50) * 100 + '%';
+            epicCancerCount.textContent = gameState.epicCancer;
+            
+            // Activate Epic Cancer Beam when full
+            if (gameState.epicCancer >= 50 && !gameState.epicCancerActive) {
+                gameState.epicCancerActive = true;
+                gameState.epicCancerEnd = Date.now() + 10000; // 10 seconds
+                showFlash('TERMINAL CANCER UNLOCKED!');
+            }
+        }
+
+        function updateLevel() {
+            levelEl.textContent = 'Level: ' + gameState.level;
+        }
+
+        function updateActiveEffects() {
+            let effects = [];
+            if (gameState.shieldActive) effects.push('🛡️ SHIELD ACTIVE');
+            if (gameState.rapidFireActive) effects.push('⚡ RAPID FIRE');
+            if (gameState.weaponType === 'spread') effects.push('📡 SPREAD SHOT');
+            if (gameState.weaponType === 'wide') effects.push('▬ WIDE BEAM');
+            if (gameState.cancer >= 5) effects.push('💀 CYST IMPALER READY');
+            if (gameState.epicCancerActive) effects.push('☠️ TERMINAL CANCER BEAM');
+            activeEffectsEl.textContent = effects.join('\n');
+        }
+
+        function drawBackground() {
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#000011');
+            gradient.addColorStop(0.5, '#001133');
+            gradient.addColorStop(1, '#220000');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = '#111';
+            for (let i = 0; i < 10; i++) {
+                const x = i * 80;
+                const h = 80 + Math.random() * 40;
+                ctx.fillRect(x, canvas.height - h, 70, h);
+            }
+            
+            ctx.fillStyle = '#ff4400';
+            ctx.fillRect(100, canvas.height - 80, 20, 30);
+            ctx.fillRect(300, canvas.height - 100, 15, 40);
+            ctx.fillRect(600, canvas.height - 90, 25, 35);
+            
+            ctx.fillStyle = '#333';
+            ctx.globalAlpha = 0.6;
+            ctx.fillRect(120, canvas.height - 120, 40, 20);
+            ctx.fillRect(310, canvas.height - 150, 35, 25);
+            ctx.fillRect(620, canvas.height - 130, 30, 20);
+            ctx.globalAlpha = 1;
+        }
+
+        function drawPlayer() {
+            const p = gameState.player;
+            
+            if (gameState.shieldActive) {
+                ctx.strokeStyle = '#4aff4a';
+                ctx.lineWidth = 3;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#4aff4a';
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 35, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
+            
+            // Epic Cancer Beam from eyes
+            if (gameState.epicCancerActive) {
+                ctx.strokeStyle = '#ff0000';
+                ctx.lineWidth = 8;
+                ctx.shadowBlur = 30;
+                ctx.shadowColor = '#ff0000';
+                ctx.beginPath();
+                ctx.moveTo(p.x - 3, p.y - 15);
+                ctx.lineTo(p.x - 3, 0);
+                ctx.moveTo(p.x + 3, p.y - 15);
+                ctx.lineTo(p.x + 3, 0);
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+                
+                // Inner bright beam
+                ctx.strokeStyle = '#ffff00';
+                ctx.lineWidth = 3;
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#ffff00';
+                ctx.beginPath();
+                ctx.moveTo(p.x - 3, p.y - 15);
+                ctx.lineTo(p.x - 3, 0);
+                ctx.moveTo(p.x + 3, p.y - 15);
+                ctx.lineTo(p.x + 3, 0);
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
+            
+            ctx.fillStyle = '#ffcc99';
+            ctx.beginPath();
+            ctx.arc(p.x, p.y - 15, 8, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Eyes glow red when Epic Cancer is active
+            if (gameState.epicCancerActive) {
+                ctx.fillStyle = '#ff0000';
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#ff0000';
+                ctx.beginPath();
+                ctx.arc(p.x - 3, p.y - 16, 3, 0, Math.PI * 2);
+                ctx.arc(p.x + 3, p.y - 16, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+            
+            ctx.fillStyle = '#4a4aff';
+            ctx.fillRect(p.x - 8, p.y - 5, 16, 20);
+            
+            ctx.strokeStyle = '#ffcc99';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(p.x - 8, p.y);
+            ctx.lineTo(p.x - 15, p.y + 10);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(p.x + 8, p.y);
+            ctx.lineTo(p.x + 15, p.y + 10);
+            ctx.stroke();
+            
+            ctx.fillStyle = '#333';
+            ctx.fillRect(p.x - 8, p.y + 15, 6, 10);
+            ctx.fillRect(p.x + 2, p.y + 15, 6, 10);
+        }
+
+        function drawBoss(boss) {
+            const now = Date.now();
+            const flashActive = now - gameState.bossDamageFlash < 100;
+            
+            // Blink logic
+            boss.blinkTimer = (boss.blinkTimer || 0) + 1;
+            if (boss.blinkTimer > 180) { // Blink every 3 seconds
+                boss.eyesOpen = false;
+                if (boss.blinkTimer > 190) { // Blink lasts 10 frames
+                    boss.blinkTimer = 0;
+                    boss.eyesOpen = true;
+                }
+            }
+            
+            // Smoke particles
+            if (!boss.smokeParticles) boss.smokeParticles = [];
+            if (Math.random() < 0.3) {
+                boss.smokeParticles.push({
+                    x: boss.x + 160,
+                    y: boss.y + 93,
+                    alpha: 0.6,
+                    size: 4,
+                    vx: Math.random() * 0.5 - 0.25,
+                    vy: -0.5
+                });
+            }
+            
+            // Update and draw smoke
+            boss.smokeParticles = boss.smokeParticles.filter(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha -= 0.01;
+                p.size += 0.1;
+                
+                if (p.alpha > 0) {
+                    ctx.fillStyle = `rgba(200, 200, 200, ${p.alpha})`;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    return true;
+                }
+                return false;
+            });
+            
+            ctx.fillStyle = flashActive ? '#ff0000' : '#0066ff';
+            ctx.shadowBlur = flashActive ? 40 : 30;
+            ctx.shadowColor = flashActive ? '#ff0000' : '#0066ff';
+            ctx.beginPath();
+            ctx.ellipse(boss.x + 100, boss.y + 75, 100, 75, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            
+            // Much larger cigarette
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(boss.x + 100, boss.y + 95, 60, 8);
+            ctx.fillStyle = '#ff4a4a';
+            ctx.fillRect(boss.x + 100, boss.y + 95, 12, 8);
+            ctx.fillStyle = '#ffaa00';
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#ffaa00';
+            ctx.beginPath();
+            ctx.arc(boss.x + 106, boss.y + 93, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            
+            // Eyes with glow
+            ctx.fillStyle = '#fff';
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#fff';
+            ctx.beginPath();
+            ctx.arc(boss.x + 50, boss.y + 60, 20, 0, Math.PI * 2);
+            ctx.arc(boss.x + 100, boss.y + 50, 25, 0, Math.PI * 2);
+            ctx.arc(boss.x + 150, boss.y + 60, 20, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            
+            // Pupils (or closed eyes)
+            if (boss.eyesOpen) {
+                ctx.fillStyle = '#ff0000';
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#ff0000';
+                ctx.beginPath();
+                ctx.arc(boss.x + 50, boss.y + 60, 8, 0, Math.PI * 2);
+                ctx.arc(boss.x + 100, boss.y + 50, 10, 0, Math.PI * 2);
+                ctx.arc(boss.x + 150, boss.y + 60, 8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            } else {
+                // Closed eyes (horizontal lines)
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(boss.x + 40, boss.y + 60);
+                ctx.lineTo(boss.x + 60, boss.y + 60);
+                ctx.moveTo(boss.x + 85, boss.y + 50);
+                ctx.lineTo(boss.x + 115, boss.y + 50);
+                ctx.moveTo(boss.x + 140, boss.y + 60);
+                ctx.lineTo(boss.x + 160, boss.y + 60);
+                ctx.stroke();
+            }
+            
+            // Damage indicator
+            if (flashActive) {
+                ctx.fillStyle = '#ff0000';
+                ctx.font = 'bold 24px Courier New';
+                ctx.textAlign = 'center';
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = '#ff0000';
+                ctx.fillText('*COUGH*', boss.x + 100, boss.y - 30);
+                ctx.shadowBlur = 0;
+            }
+            
+            // Health bar
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(boss.x, boss.y - 20, 200, 10);
+            
+            const healthGradient = ctx.createLinearGradient(boss.x, 0, boss.x + 200, 0);
+            healthGradient.addColorStop(0, '#ff0000');
+            healthGradient.addColorStop(0.5, '#ff4a4a');
+            healthGradient.addColorStop(1, '#ff8888');
+            ctx.fillStyle = healthGradient;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#ff0000';
+            ctx.fillRect(boss.x, boss.y - 20, 200 * (boss.health / boss.maxHealth), 10);
+            ctx.shadowBlur = 0;
+            
+            // Taunt bubble
+            if (gameState.bossTaunt.visible) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                const bubbleWidth = gameState.bossTaunt.text.length * 10 + 20;
+                ctx.fillRect(boss.x + 100 - bubbleWidth/2, boss.y - 60, bubbleWidth, 35);
+                ctx.strokeRect(boss.x + 100 - bubbleWidth/2, boss.y - 60, bubbleWidth, 35);
+                
+                ctx.fillStyle = '#fff';
+                ctx.font = '14px Courier New';
+                ctx.textAlign = 'center';
+                ctx.fillText(gameState.bossTaunt.text, boss.x + 100, boss.y - 35);
+            }
+        }
+
+        function drawBossEnemy(enemy) {
+            if (!enemy.alive) return;
+            
+            ctx.fillStyle = '#8a8aff';
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = '#8a8aff';
+            ctx.beginPath();
+            ctx.ellipse(enemy.x + 15, enemy.y + 12, 15, 12, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(enemy.x + 10, enemy.y + 10, 4, 0, Math.PI * 2);
+            ctx.arc(enemy.x + 20, enemy.y + 10, 4, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(enemy.x + 10, enemy.y + 10, 2, 0, Math.PI * 2);
+            ctx.arc(enemy.x + 20, enemy.y + 10, 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawAlien(alien) {
+            if (!alien.alive) return;
+            
+            ctx.fillStyle = alien.color || '#4a9aff';
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = alien.color || '#4a9aff';
+            ctx.beginPath();
+            ctx.ellipse(alien.x + 20, alien.y + 15, 20, 15, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(alien.x + 10, alien.y + 12, 5, 0, Math.PI * 2);
+            ctx.arc(alien.x + 20, alien.y + 10, 5, 0, Math.PI * 2);
+            ctx.arc(alien.x + 30, alien.y + 12, 5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(alien.x + 10, alien.y + 12, 2, 0, Math.PI * 2);
+            ctx.arc(alien.x + 20, alien.y + 10, 2, 0, Math.PI * 2);
+            ctx.arc(alien.x + 30, alien.y + 12, 2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.strokeStyle = alien.color || '#4a9aff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(alien.x + 10, alien.y + 5);
+            ctx.lineTo(alien.x + 5, alien.y - 5);
+            ctx.moveTo(alien.x + 30, alien.y + 5);
+            ctx.lineTo(alien.x + 35, alien.y - 5);
+            ctx.stroke();
+            
+            ctx.fillStyle = '#ff4aff';
+            ctx.shadowBlur = 5;
+            ctx.shadowColor = '#ff4aff';
+            ctx.beginPath();
+            ctx.arc(alien.x + 5, alien.y - 5, 3, 0, Math.PI * 2);
+            ctx.arc(alien.x + 35, alien.y - 5, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+
+        function drawBullet(bullet) {
+            ctx.shadowBlur = 10;
+            
+            if (bullet.type === 'cyst') {
+                // Massive dramatic Cyst Impaler
+                ctx.fillStyle = '#ff0000';
+                ctx.shadowColor = '#ff0000';
+                ctx.shadowBlur = 40;
+                ctx.beginPath();
+                ctx.arc(bullet.x, bullet.y, 25, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Inner core
+                ctx.fillStyle = '#ffff00';
+                ctx.shadowBlur = 30;
+                ctx.shadowColor = '#ffff00';
+                ctx.beginPath();
+                ctx.arc(bullet.x, bullet.y, 15, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Outer glow ring
+                ctx.strokeStyle = '#ff8800';
+                ctx.lineWidth = 4;
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#ff8800';
+                ctx.beginPath();
+                ctx.arc(bullet.x, bullet.y, 30, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // Trail effect
+                ctx.globalAlpha = 0.6;
+                ctx.fillStyle = '#ff0000';
+                ctx.beginPath();
+                ctx.arc(bullet.x, bullet.y + 20, 15, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 0.3;
+                ctx.beginPath();
+                ctx.arc(bullet.x, bullet.y + 35, 10, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            } else if (bullet.type === 'wide') {
+                ctx.fillStyle = '#ff00ff';
+                ctx.shadowColor = '#ff00ff';
+                ctx.fillRect(bullet.x - 10, bullet.y, 20, 15);
+            } else {
+                ctx.fillStyle = '#a020f0';
+                ctx.shadowColor = '#a020f0';
+                ctx.fillRect(bullet.x - 3, bullet.y, 6, 12);
+            }
+            ctx.shadowBlur = 0;
+        }
+
+        function drawAlienBullet(bullet) {
+            ctx.fillStyle = '#4a9aff';
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#4a9aff';
+            ctx.fillRect(bullet.x - 4, bullet.y, 8, 16);
+            ctx.shadowBlur = 0;
+        }
+
+        function drawPowerup(powerup) {
+            ctx.shadowBlur = 15;
+            
+            if (powerup.type === 'cigarette') {
+                ctx.fillStyle = '#fff';
+                ctx.shadowColor = '#fff';
+                ctx.fillRect(powerup.x - 3, powerup.y - 10, 6, 20);
+                ctx.fillStyle = '#ff4a4a';
+                ctx.fillRect(powerup.x - 3, powerup.y - 10, 6, 5);
+            } else if (powerup.type === 'carton') {
+                ctx.fillStyle = '#ffd700';
+                ctx.shadowColor = '#ffd700';
+                ctx.fillRect(powerup.x - 12, powerup.y - 8, 24, 16);
+                ctx.fillStyle = '#ff4a4a';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('🚬', powerup.x, powerup.y + 4);
+            } else if (powerup.type === 'shield') {
+                ctx.fillStyle = '#4aff4a';
+                ctx.shadowColor = '#4aff4a';
+                ctx.strokeStyle = '#4aff4a';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(powerup.x, powerup.y, 12, 0, Math.PI * 2);
+                ctx.stroke();
+            } else if (powerup.type === 'rapidfire') {
+                ctx.fillStyle = '#ffff00';
+                ctx.shadowColor = '#ffff00';
+                ctx.beginPath();
+                ctx.moveTo(powerup.x, powerup.y - 12);
+                ctx.lineTo(powerup.x - 8, powerup.y + 6);
+                ctx.lineTo(powerup.x + 8, powerup.y + 6);
+                ctx.closePath();
+                ctx.fill();
+            } else if (powerup.type === 'spread' || powerup.type === 'wide') {
+                ctx.fillStyle = '#ff00ff';
+                ctx.shadowColor = '#ff00ff';
+                ctx.beginPath();
+                ctx.arc(powerup.x, powerup.y, 12, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#fff';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(powerup.type === 'spread' ? '◇' : '▬', powerup.x, powerup.y + 5);
+            } else {
+                ctx.fillStyle = '#a020f0';
+                ctx.shadowColor = '#a020f0';
+                ctx.beginPath();
+                ctx.arc(powerup.x, powerup.y, 15, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#d070ff';
+                ctx.font = '20px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('★', powerup.x, powerup.y + 7);
+            }
+            ctx.shadowBlur = 0;
+        }
+
+        function shoot() {
+            const p = gameState.player;
+            
+            if (gameState.weaponType === 'spread') {
+                gameState.bullets.push({ x: p.x, y: p.y - 20, vx: 0, type: 'normal' });
+                gameState.bullets.push({ x: p.x, y: p.y - 20, vx: -2, type: 'normal' });
+                gameState.bullets.push({ x: p.x, y: p.y - 20, vx: 2, type: 'normal' });
+            } else if (gameState.weaponType === 'wide') {
+                gameState.bullets.push({ x: p.x, y: p.y - 20, vx: 0, type: 'wide' });
+            } else {
+                gameState.bullets.push({ x: p.x, y: p.y - 20, vx: 0, type: 'normal' });
+            }
+        }
+
+        function shootCystImpaler() {
+            if (gameState.cancer >= 5) {
+                gameState.bullets.push({ 
+                    x: gameState.player.x, 
+                    y: gameState.player.y - 20, 
+                    vx: 0, 
+                    type: 'cyst' 
+                });
+                gameState.cancer = 0;
+                updateCancerBar();
+                updateActiveEffects();
+                showFlash('CYST IMPALER!');
+            }
+        }
+
+        function alienShoot() {
+            const aliveAliens = gameState.aliens.filter(a => a.alive);
+            if (aliveAliens.length === 0) return;
+            
+            const shooter = aliveAliens[Math.floor(Math.random() * aliveAliens.length)];
+            
+            // Different attack patterns based on shootType
+            if (shooter.shootType === 1) {
+                // Spread shot
+                gameState.alienBullets.push({ x: shooter.x + 20, y: shooter.y + 30, vx: -1 });
+                gameState.alienBullets.push({ x: shooter.x + 20, y: shooter.y + 30, vx: 0 });
+                gameState.alienBullets.push({ x: shooter.x + 20, y: shooter.y + 30, vx: 1 });
+            } else if (shooter.shootType === 2) {
+                // Fast shot
+                gameState.alienBullets.push({ x: shooter.x + 20, y: shooter.y + 30, vx: 0, fast: true });
+            } else {
+                // Normal shot
+                gameState.alienBullets.push({ x: shooter.x + 20, y: shooter.y + 30, vx: 0 });
+            }
+        }
+
+        function bossShoot() {
+            if (!gameState.boss) return;
+            const boss = gameState.boss;
+            
+            gameState.alienBullets.push({ x: boss.x + 50, y: boss.y + 150 });
+            gameState.alienBullets.push({ x: boss.x + 100, y: boss.y + 150 });
+            gameState.alienBullets.push({ x: boss.x + 150, y: boss.y + 150 });
+        }
+
+        function showBossTaunt() {
+            gameState.bossTaunt.text = bossTaunts[Math.floor(Math.random() * bossTaunts.length)];
+            gameState.bossTaunt.visible = true;
+            setTimeout(() => {
+                gameState.bossTaunt.visible = false;
+            }, 2500);
+        }
+
+        function showFlash(message) {
+            flashMessageEl.textContent = message;
+            flashMessageEl.style.display = 'block';
+            setTimeout(() => {
+                flashMessageEl.style.display = 'none';
+            }, 1000);
+        }
+
+        function update() {
+            if (gameState.gameOver || gameState.levelComplete) return;
+
+            const now = Date.now();
+            
+            if (gameState.shieldActive && now > gameState.shieldEnd) {
+                gameState.shieldActive = false;
+                updateActiveEffects();
+            }
+            if (gameState.rapidFireActive && now > gameState.rapidFireEnd) {
+                gameState.rapidFireActive = false;
+                gameState.fireRate = 500;
+                updateActiveEffects();
+            }
+            if (gameState.epicCancerActive && now > gameState.epicCancerEnd) {
+                gameState.epicCancerActive = false;
+                gameState.epicCancer = 0;
+                updateEpicCancerBar();
+                updateActiveEffects();
+            }
+
+            // Player movement with smooth tweening
+            if (gameState.keys['ArrowLeft'] && gameState.player.targetX > 20) {
+                gameState.player.targetX -= gameState.player.speed;
+            }
+            if (gameState.keys['ArrowRight'] && gameState.player.targetX < canvas.width - 20) {
+                gameState.player.targetX += gameState.player.speed;
+            }
+            if (gameState.keys['ArrowUp'] && gameState.player.targetY > 50) {
+                gameState.player.targetY -= gameState.player.speed;
+            }
+            if (gameState.keys['ArrowDown'] && gameState.player.targetY < canvas.height - 150) {
+                gameState.player.targetY += gameState.player.speed;
+            }
+            
+            // Smooth interpolation
+            gameState.player.x += (gameState.player.targetX - gameState.player.x) * 0.2;
+            gameState.player.y += (gameState.player.targetY - gameState.player.y) * 0.2;
+
+            const currentFireRate = gameState.rapidFireActive ? 100 : gameState.fireRate;
+            if (gameState.keys[' '] && now - gameState.lastShot > currentFireRate) {
+                shoot();
+                gameState.lastShot = now;
+            }
+
+            if (gameState.bossMode && gameState.boss) {
+                gameState.boss.x += gameState.boss.vx;
+                
+                if (gameState.boss.x <= 0 || gameState.boss.x >= canvas.width - 200) {
+                    gameState.boss.vx *= -1;
+                    gameState.boss.x = Math.max(0, Math.min(canvas.width - 200, gameState.boss.x));
+                    
+                    // 75% chance to drop carton (increased from 33%)
+                    if (Math.random() < 0.75) {
+                        const types = ['speed', 'fire', 'shield', 'rapidfire', 'spread', 'wide'];
+                        gameState.powerups.push({
+                            x: gameState.boss.x + 100,
+                            y: gameState.boss.y + 150,
+                            type: 'carton',
+                            contains: types[Math.floor(Math.random() * types.length)]
+                        });
+                    }
+                }
+                
+                if (now - gameState.boss.lastShot > gameState.boss.fireRate) {
+                    bossShoot();
+                    gameState.boss.lastShot = now;
+                }
+                
+                if (now - gameState.lastBossTaunt > gameState.bossTauntRate) {
+                    showBossTaunt();
+                    gameState.lastBossTaunt = now;
+                }
+                
+                if (now - gameState.lastBossEnemySpawn > gameState.bossEnemySpawnRate) {
+                    spawnBossEnemy();
+                    gameState.lastBossEnemySpawn = now;
+                }
+                
+                gameState.bossEnemies.forEach(enemy => {
+                    if (enemy.alive) {
+                        enemy.x += enemy.vx;
+                        if (enemy.x < 0 || enemy.x > canvas.width - 30) {
+                            enemy.vx *= -1;
+                        }
+                        enemy.y += 0.5;
+                    }
+                });
+            } else {
+                if (now - gameState.lastAlienShot > gameState.alienFireRate) {
+                    alienShoot();
+                    gameState.lastAlienShot = now;
+                }
+            }
+
+            gameState.bullets = gameState.bullets.filter(bullet => {
+                bullet.y -= bullet.type === 'cyst' ? 8 : 10; // Slower Cyst Impaler
+                if (bullet.vx) bullet.x += bullet.vx;
+                return bullet.y > 0 && bullet.x > 0 && bullet.x < canvas.width;
+            });
+
+            gameState.alienBullets = gameState.alienBullets.filter(bullet => {
+                bullet.y += bullet.fast ? 8 : 5;
+                if (bullet.vx) bullet.x += bullet.vx;
+                
+                if (!gameState.shieldActive) {
+                    if (Math.abs(bullet.x - gameState.player.x) < 25 &&
+                        Math.abs(bullet.y - gameState.player.y) < 30) {
+                        gameState.weed -= 10; // Reduced from 20 to 10 (50% less damage)
+                        updateWeedBar();
+                        
+                        if (gameState.weed <= 0) {
+                            gameState.lives--;
+                            if (gameState.lives <= 0) {
+                                gameState.gameOver = true;
+                            } else {
+                                gameState.weed = 100;
+                            }
+                            updateWeedBar();
+                        }
+                        return false;
+                    }
+                }
+                
+                return bullet.y < canvas.height && bullet.x > 0 && bullet.x < canvas.width;
+            });
+
+            if (!gameState.bossMode) {
+                let moveDown = false;
+                gameState.aliens.forEach(alien => {
+                    if (!alien.alive) return;
+                    alien.x += gameState.alienSpeed * gameState.alienDirection;
+                    
+                    if (alien.x < 20 || alien.x > canvas.width - 60) {
+                        moveDown = true;
+                    }
+                });
+
+                if (moveDown) {
+                    gameState.alienDirection *= -1;
+                    gameState.aliens.forEach(alien => {
+                        if (alien.alive) alien.y += 10;
+                        if (alien.y > 450) gameState.gameOver = true;
+                    });
+                }
+            }
+
+            gameState.bullets.forEach((bullet, bIndex) => {
+                const hitWidth = bullet.type === 'wide' ? 30 : (bullet.type === 'cyst' ? 60 : 10);
+                if (gameState.boss && 
+                    bullet.x > gameState.boss.x && bullet.x < gameState.boss.x + gameState.boss.width &&
+                    bullet.y > gameState.boss.y && bullet.y < gameState.boss.y + gameState.boss.height) {
+                    
+                    const damage = bullet.type === 'cyst' ? 40 : (bullet.type === 'wide' ? 3 : 1);
+                    gameState.boss.health -= damage;
+                    gameState.bullets.splice(bIndex, 1);
+                    gameState.score += 5;
+                    scoreEl.textContent = 'Score: ' + gameState.score;
+                    gameState.bossDamageFlash = now;
+                    
+                    if (gameState.boss.health <= 0) {
+                        // Final boss death
+                        if (gameState.level === 4) {
+                            showBossExplosion();
+                        } else {
+                            gameState.score += 1000 * gameState.level;
+                            scoreEl.textContent = 'Score: ' + gameState.score;
+                            gameState.boss = null;
+                            gameState.bossMode = false;
+                            gameState.bossEnemies = [];
+                            gameState.alienSpeed += 0.2;
+                            gameState.alienFireRate = Math.max(800, gameState.alienFireRate - 100);
+                            createAliens();
+                        }
+                    }
+                }
+                
+                // Epic Cancer Beam kills everything instantly
+                if (gameState.epicCancerActive) {
+                    if (gameState.boss && gameState.player.x > gameState.boss.x - 10 && 
+                        gameState.player.x < gameState.boss.x + gameState.boss.width + 10) {
+                        // 8% damage per second (approx 0.13% per frame at 60fps)
+                        gameState.boss.health -= gameState.boss.maxHealth * 0.0013;
+                        gameState.bossDamageFlash = now;
+                        
+                        if (gameState.boss.health <= 0) {
+                            // Final boss death
+                            if (gameState.level === 4) {
+                                showBossExplosion();
+                            } else {
+                                gameState.score += 1000 * gameState.level;
+                                scoreEl.textContent = 'Score: ' + gameState.score;
+                                gameState.boss = null;
+                                gameState.bossMode = false;
+                                gameState.bossEnemies = [];
+                                gameState.alienSpeed += 0.2;
+                                gameState.alienFireRate = Math.max(800, gameState.alienFireRate - 100);
+                                createAliens();
+                            }
+                        }
+                    }
+                }
+                
+                gameState.bossEnemies.forEach(enemy => {
+                    if (enemy.alive &&
+                        bullet.x > enemy.x && bullet.x < enemy.x + enemy.width &&
+                        bullet.y > enemy.y && bullet.y < enemy.y + enemy.height) {
+                        enemy.alive = false;
+                        gameState.bullets.splice(bIndex, 1);
+                        gameState.score += 20;
+                        scoreEl.textContent = 'Score: ' + gameState.score;
+                        
+                        gameState.weed = Math.min(gameState.weed + 10, 100);
+                        updateWeedBar();
+                    }
+                });
+                
+                gameState.aliens.forEach(alien => {
+                    const hitWidth = bullet.type === 'wide' ? 30 : (bullet.type === 'cyst' ? 50 : 10);
+                    if (alien.alive && 
+                        bullet.x > alien.x - hitWidth/2 && bullet.x < alien.x + alien.width + hitWidth/2 &&
+                        bullet.y > alien.y && bullet.y < alien.y + alien.height) {
+                        alien.alive = false;
+                        gameState.bullets.splice(bIndex, 1);
+                        gameState.score += 10 * gameState.level;
+                        scoreEl.textContent = 'Score: ' + gameState.score;
+                        
+                        const rand = Math.random();
+                        if (rand < 0.25) {
+                            gameState.powerups.push({
+                                x: alien.x + 20,
+                                y: alien.y,
+                                type: 'cigarette'
+                            });
+                        } else if (rand < 0.45) {
+                            const types = ['speed', 'fire', 'shield', 'rapidfire', 'spread', 'wide'];
+                            gameState.powerups.push({
+                                x: alien.x + 20,
+                                y: alien.y,
+                                type: types[Math.floor(Math.random() * types.length)]
+                            });
+                        }
+                    }
+                });
+            });
+
+            gameState.powerups = gameState.powerups.filter(powerup => {
+                powerup.y += 2;
+                
+                if (Math.abs(powerup.x - gameState.player.x) < 25 &&
+                    Math.abs(powerup.y - gameState.player.y) < 25) {
+                    
+                    let actualType = powerup.type;
+                    if (powerup.type === 'carton') {
+                        actualType = powerup.contains;
+                        showFlash('CARTON BONUS!');
+                        // Cartons give 3 cancer + 3 epic cancer
+                        gameState.cancer = Math.min(gameState.cancer + 3, 5);
+                        gameState.epicCancer = Math.min(gameState.epicCancer + 3, 50);
+                        updateCancerBar();
+                        updateEpicCancerBar();
+                    }
+                    
+                    if (actualType === 'speed') {
+                        gameState.player.speed = Math.min(gameState.player.speed + 1, 10);
+                    } else if (actualType === 'fire') {
+                        gameState.fireRate = Math.max(gameState.fireRate - 50, 100);
+                    } else if (actualType === 'shield') {
+                        gameState.shieldActive = true;
+                        gameState.shieldEnd = now + 5000;
+                    } else if (actualType === 'rapidfire') {
+                        gameState.rapidFireActive = true;
+                        gameState.rapidFireEnd = now + 5000;
+                        gameState.fireRate = 100;
+                    } else if (actualType === 'cigarette') {
+                        showFlash('CANCER INCOMING!');
+                        gameState.weed = Math.min(gameState.weed + 50, 100);
+                        gameState.cancer = Math.min(gameState.cancer + 1, 5);
+                        gameState.epicCancer = Math.min(gameState.epicCancer + 1, 50);
+                        gameState.score += 100;
+                        scoreEl.textContent = 'Score: ' + gameState.score;
+                        updateWeedBar();
+                        updateCancerBar();
+                        updateEpicCancerBar();
+                    } else if (actualType === 'spread') {
+                        gameState.weaponType = 'spread';
+                        setTimeout(() => { 
+                            gameState.weaponType = 'normal'; 
+                            updateActiveEffects(); 
+                        }, 8000);
+                    } else if (actualType === 'wide') {
+                        gameState.weaponType = 'wide';
+                        setTimeout(() => { 
+                            gameState.weaponType = 'normal'; 
+                            updateActiveEffects(); 
+                        }, 8000);
+                    }
+                    updateActiveEffects();
+                    return false;
+                }
+                
+                return powerup.y < canvas.height;
+            });
+
+            if (!gameState.bossMode && gameState.aliens.every(alien => !alien.alive)) {
+                gameState.levelComplete = true;
+                levelCompleteEl.style.display = 'block';
+            }
+
+            if (gameState.gameOver) {
+                gameOverEl.style.display = 'block';
+            }
+        }
+
+        function draw() {
+            drawBackground();
+            
+            drawPlayer();
+            gameState.bullets.forEach(drawBullet);
+            gameState.alienBullets.forEach(drawAlienBullet);
+            if (gameState.bossMode && gameState.boss) {
+                drawBoss(gameState.boss);
+                gameState.bossEnemies.forEach(drawBossEnemy);
+            } else {
+                gameState.aliens.forEach(drawAlien);
+            }
+            gameState.powerups.forEach(drawPowerup);
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            if (!gameState.gameOver && !gameState.levelComplete) {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (!gameState.started && e.key === ' ') {
+                e.preventDefault();
+                if (!gameState.cinematicPlaying) {
+                    playCinematic();
+                } else {
+                    startGame();
+                }
+                return;
+            }
+            
+            gameState.keys[e.key] = true;
+            
+            if (e.key === ' ') {
+                e.preventDefault();
+            }
+            
+            if ((e.key === 'c' || e.key === 'C') && gameState.started) {
+                shootCystImpaler();
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            gameState.keys[e.key] = false;
+        });
+
+        document.addEventListener('click', (e) => {
+            if (e.target.id === 'continueBtn') {
+                gameOverEl.style.display = 'none';
+                playDeathStory();
+            } else if (e.target.id === 'nextLevelBtn') {
+                nextLevel();
+            } else if (e.target.id === 'fightBossBtn') {
+                startBossFight();
+            }
+        });
+
+        initGame();
+    </script>
+</body>
+</html>
