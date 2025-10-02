@@ -762,7 +762,7 @@
                 height: 150,
                 health: Math.floor(50 * gameState.level * healthMultiplier),
                 maxHealth: Math.floor(50 * gameState.level * healthMultiplier),
-                vx: 2 + (gameState.level * 0.5), // Faster movement
+                vx: 1 + (gameState.level * 0.2), // Faster movement
                 lastShot: 0,
                 fireRate: Math.max(400, 800 - (gameState.level * 70)), // Shoots faster
                 smokeParticles: []
