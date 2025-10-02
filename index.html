@@ -1,50 +1,4 @@
-        function drawBackground() {
-            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-            gradient.addColorStop(0, '#000011');
-            gradient.addColorStop(0.5, '#001133');
-            gradient.addColorStop(1, '#220000');
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Moon
-            ctx.fillStyle = '#ccccaa';
-            ctx.shadowBlur = 30;
-            ctx.shadowColor = '#ffffff';
-            ctx.beginPath();
-            ctx.arc(650, 100, 60, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.shadowBlur = 0;
-            
-            // Moon craters
-            ctx.fillStyle = '#999988';
-            ctx.globalAlpha = 0.3;
-            ctx.beginPath();
-            ctx.arc(640, 90, 15, 0, Math.PI * 2);
-            ctx.arc(670, 105, 10, 0, Math.PI * 2);
-            ctx.arc(655, 115, 8, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.globalAlpha = 1;
-            
-            // Destroyed city
-            ctx.fillStyle = '#111';
-            for (let i = 0; i < 10; i++) {
-                const x = i * 80;
-                const h = 80 + Math.random() * 40;
-                ctx.fillRect(x, canvas.height - h, 70, h);
-            }
-            
-            ctx.fillStyle = '#ff4400';
-            ctx.fillRect(100, canvas.height - 80, 20, 30);
-            ctx.fillRect(300, canvas.height - 100, 15, 40);
-            ctx.fillRect(600, canvas.height - 90, 25, 35);
-            
-            ctx.fillStyle = '#333';
-            ctx.globalAlpha = 0.6;
-            ctx.fillRect(120, canvas.height - 120, 40, 20);
-            ctx.fillRect(310, canvas.height - 150, 35, 25);
-            ctx.fillRect(620, canvas.height - 130, 30, 20);
-            ctx.globalAlpha = 1;
-        }<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -67,10 +21,17 @@
             gap: 30px;
             align-items: flex-start;
         }
-        #leftPanel {
+        #leftStats {
             display: flex;
             flex-direction: column;
             gap: 15px;
+            width: 250px;
+        }
+        #rightControls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 250px;
         }
         #gameCanvas {
             border: 3px solid #4a4aff;
@@ -90,7 +51,7 @@
             text-shadow: 0 0 10px #ff0000;
         }
         #weedFill, #cancerFill, #epicCancerFill {
-            width: 200px;
+            width: 100%;
             height: 30px;
             background: #333;
             border: 2px solid #a020f0;
@@ -116,6 +77,12 @@
         #cancerFillInner {
             height: 100%;
             background: linear-gradient(90deg, #ff4a4a, #ff8888);
+            width: 0%;
+            transition: width 0.3s;
+        }
+        #epicCancerFillInner {
+            height: 100%;
+            background: linear-gradient(90deg, #ff0000, #ff4444);
             width: 0%;
             transition: width 0.3s;
         }
@@ -237,7 +204,7 @@
 </head>
 <body>
     <div id="gameContainer">
-        <div id="leftPanel">
+        <div id="leftStats">
             <div style="font-size: 28px; font-weight: bold; color: #ff0080; text-shadow: 0 0 15px #ff0080;">WASTE OF ATOMS</div>
             <div id="level">Level: 1</div>
             <div id="score">Score: 0</div>
@@ -260,19 +227,8 @@
                 </div>
             </div>
             <div id="activeEffects"></div>
-            <div id="controls">
-                <h3>CONTROLS</h3>
-                <div>← → Move Left/Right</div>
-                <div>↑ ↓ Move Up/Down</div>
-                <div>SPACE Shoot</div>
-                <div>C Fire Cyst Impaler (5 cancer)</div>
-                <div style="margin-top: 15px; color: #a020f0;">💜 Purple Star: Speed/Fire Rate</div>
-                <div style="color: #4aff4a;">🛡️ Green Shield: Invincibility</div>
-                <div style="color: #ffff00;">⚡ Yellow Bolt: Rapid Fire</div>
-                <div style="color: #ff4a4a;">🚬 Cigarette: CANCER INCOMING</div>
-                <div style="color: #ff00ff;">📡 Spread / ▬ Wide Beam</div>
-            </div>
         </div>
+        
         <div style="position: relative;">
             <canvas id="gameCanvas" width="800" height="600"></canvas>
             <div id="startScreen">
@@ -308,6 +264,21 @@
                 <button id="fightBossBtn">FIGHT!</button>
             </div>
         </div>
+        
+        <div id="rightControls">
+            <div id="controls">
+                <h3>CONTROLS</h3>
+                <div>← → Move Left/Right</div>
+                <div>↑ ↓ Move Up/Down</div>
+                <div>SPACE Shoot</div>
+                <div>C Fire Cyst Impaler (5 cancer)</div>
+                <div style="margin-top: 15px; color: #a020f0;">💜 Purple Star: Speed/Fire Rate</div>
+                <div style="color: #4aff4a;">🛡️ Green Shield: Invincibility</div>
+                <div style="color: #ffff00;">⚡ Yellow Bolt: Rapid Fire</div>
+                <div style="color: #ff4a4a;">🚬 Cigarette: CANCER INCOMING</div>
+                <div style="color: #ff00ff;">🔡 Spread / ▬ Wide Beam</div>
+            </div>
+        </div>
     </div>
     <div id="socialProof">
         ⭐ 10/10 - IGN<br>
@@ -316,7 +287,7 @@
     </div>
     <div id="goty">★ GAME OF THE YEAR ★</div>
 
-    <script>
+        <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const scoreEl = document.getElementById('score');
